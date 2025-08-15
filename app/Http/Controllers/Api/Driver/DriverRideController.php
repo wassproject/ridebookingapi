@@ -422,7 +422,7 @@ public function callClient($rideId)
             ->first();
 
         if (!$ride) {
-            return response()->json([
+              return response()->json([
                 'status' => false,
                 'message' => 'Ride not found or already assigned to another driver',
             ], 404);

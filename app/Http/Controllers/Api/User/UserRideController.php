@@ -88,20 +88,20 @@ class UserRideController extends Controller
     /**
      * Show a specific ride.
      */
-    public function show($id)
-    {
-        $userId = Auth::id();
-
-        $ride = Ride::with(['driver', 'city']) // 👈 Add relations
-            ->where('id', $id)
-            ->where('user_id', $userId)
-            ->firstOrFail();
-
-        return response()->json([
-            'status' => true,
-            'ride' => $ride
-        ]);
-    }
+//    public function show($id)
+//    {
+//        $userId = Auth::id();
+//
+//        $ride = Ride::with(['driver', 'city']) // 👈 Add relations
+//            ->where('id', $id)
+//            ->where('user_id', $userId)
+//            ->firstOrFail();
+//
+//        return response()->json([
+//            'status' => true,
+//            'ride' => $ride
+//        ]);
+//    }
 
 //    public function store(Request $request)
 //    {
@@ -297,6 +297,39 @@ class UserRideController extends Controller
 //
 //        return round($earthRadius * $c, 2); // km
 //    }
+    public function show($id)
+    {
+        $ride = Ride::with('carType', 'city') // load relations if needed
+        ->find($id);
+
+        if (!$ride) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Ride not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'ride'   => [
+                'pickup_location'    => $ride->pickup_location,
+                'drop_location'      => $ride->drop_location,
+                'ride_time'          => $ride->ride_time,
+                'status'             => $ride->status,
+                'fare'               => $ride->fare,
+                'city_id'            => $ride->city_id,
+                'car_type_id'        => $ride->car_type_id,
+                'car_type'           => $ride->carType?->name,
+                'trip_starting_date' => $ride->trip_starting_date,
+                'trip_ending_date'   => $ride->trip_ending_date,
+                'time'               => $ride->time,
+                'hourly'             => $ride->hourly,
+                'transmission'       => $ride->transmission,
+                'trip_type'          => $ride->trip_type,
+                'driver_phone'       => $ride->driver?->phone,
+            ]
+        ]);
+    }
 
     public function store(Request $request)
     {
@@ -306,6 +339,13 @@ class UserRideController extends Controller
             'drop_lat'   => 'required|numeric',
             'drop_lng'   => 'required|numeric',
             'city_name'  => 'required|string',
+            'car_type_id' => 'required|exists:car_types,id',
+            'trip_type'    => 'required|in:round_way,one_way',
+            'trip_starting_date' => 'nullable|date',
+            'trip_ending_date'   => 'nullable|date',
+            'time'               => 'nullable',
+            'hourly'             => 'nullable|string',
+            'transmission' => 'required|in:manual,automatic',
         ]);
 
         // Find city
@@ -340,6 +380,13 @@ class UserRideController extends Controller
             'status'          => 'upcoming',
             'fare'            => $calculatedFare,
             'city_id'         => $city->id,
+            'car_type_id'     => $request->car_type_id,
+            'trip_starting_date' => $request->trip_starting_date,
+            'trip_ending_date'   => $request->trip_ending_date,
+            'time'               => $request->time,
+            'hourly'             => $request->hourly,
+            'transmission'    => $request->transmission, // Store transmission
+            'trip_type'       => $request->trip_type, // Store trip type
         ]);
 
         // Get all drivers in that city with their car & car type
@@ -380,7 +427,14 @@ class UserRideController extends Controller
             'status' => true,
             'message' => 'Ride created, drivers with distance returned',
             'calculated_fare' => $calculatedFare,
-            'ride' => $ride,
+           // 'ride' => $ride,
+            'ride' => $ride->load('carType'),
+            'transmission'    => $ride->transmission,
+            'trip_type'       => $ride->trip_type,
+            'trip_starting_date' => $request->trip_starting_date,
+            'trip_ending_date'   => $request->trip_ending_date,
+            'time'               => $request->time,
+            'hourly'             => $request->hourly,
             'drivers' => $driversWithDistance
         ]);
     }

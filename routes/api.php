@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Driver\DriverImageUploadController;
 use App\Http\Controllers\Api\Driver\DriverPrivacyController;
 use App\Http\Controllers\Api\Driver\DriverRideController;
 use App\Http\Controllers\Api\Driver\DriverWalletController;
+use App\Http\Controllers\Api\User\CarTypeController;
 use App\Http\Controllers\Api\User\UserDashboardController;
 use App\Http\Controllers\Api\User\UserRideController;
 use App\Http\Controllers\Api\Driver\DriverCarController;
@@ -39,9 +40,14 @@ Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
     Route::post('/user/postbanners', [UserDashboardController::class, 'storeBanner']);
     Route::put('/user/updatebanner/{id}', [UserDashboardController::class, 'updateBanner']);
 
-    Route::post('/user/rides', [UserRideController::class, 'store']);          // Book ride
-    Route::get('/user/rides', [UserRideController::class, 'index']);           // Ride history
-    Route::get('/user/rides/{id}', [UserRideController::class, 'show']);       // Specific ride details
+    Route::post('/user/rides', [UserRideController::class, 'store']);
+    Route::get('user/rides/{id}', [UserRideController::class, 'show']);  // show ride
+    //Route::get('/user/rides', [UserRideController::class, 'index']);           // Ride history
+    //Route::get('/user/rides/{id}', [UserRideController::class, 'show']);
+
+    Route::get('user/car-types', [CarTypeController::class, 'index']);
+
+
 });
 
 // Authenticated routes driver

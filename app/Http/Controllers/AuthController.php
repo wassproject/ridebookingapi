@@ -47,10 +47,10 @@ class AuthController extends Controller
                 'required',
                 'regex:/^[0-9]{10}$/',
                 'unique:drivers,phone', // Check in drivers table
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $message) {
                     // Check in users table as well
                     if (\App\Models\User::where('phone', $value)->exists()) {
-                        $fail('The phone number has already been taken.');
+                        $message('The phone number has already been taken.');
                     }
                 }
             ],

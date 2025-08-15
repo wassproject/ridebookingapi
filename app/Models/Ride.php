@@ -19,6 +19,13 @@ class Ride extends Model
         'ride_time',
         'status',
         'fare',
+         'car_type_id',
+         'trip_starting_date',
+         'trip_ending_date',
+         'time',
+         'hourly',
+         'trip_type',
+         'transmission'
     ];
      public function user()
     {
@@ -34,5 +41,10 @@ class Ride extends Model
     {
         return $this->belongsTo(City::class);
     }
+    public function CarType()
+    {
+        return $this->belongsTo(CarType::class, 'car_type_id');
+    }
+
 
 }
