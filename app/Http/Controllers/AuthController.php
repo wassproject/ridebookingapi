@@ -111,6 +111,7 @@ class AuthController extends Controller
                 'regex:/^[0-9]{10}$/',
                 'unique:users'
             ],
+            'gender' => 'required|in:male,female',
             'photo' => 'nullable|image',
             'address' => 'nullable|string',
         ], [
@@ -133,6 +134,7 @@ class AuthController extends Controller
             'name'    => $request->name,
             'email'   => $request->email,
             'phone'   => $request->phone,
+            'gender' =>  $request->gender,
             'photo'   => $photoPath, // save path instead of raw file
             'address' => $request->address,
         ]);

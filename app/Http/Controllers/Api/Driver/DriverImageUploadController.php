@@ -21,8 +21,8 @@ class DriverImageUploadController extends Controller
     public function uploadAadhaarPhotos(Request $request)
     {
         $request->validate([
-            'aadhaar_front_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-            'aadhaar_back_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'aadhaar_front_photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'aadhaar_back_photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $driver = Auth::guard('sanctum')->user();

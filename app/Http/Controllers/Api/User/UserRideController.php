@@ -366,6 +366,7 @@ class UserRideController extends Controller
             $driversWithDistance[] = [
                 'driver_id'        => $driver->id,
                 'name'             => $driver->name,
+                'photo_url'        => $driver->selfie_photo ? asset('storage/' . $driver->selfie_photo) : null,
                 'car_name'         => $driver->car->carType->name ?? 'Unknown',
                 'driver_lat'       => $driverLocation['lat'] ?? null,
                 'driver_lng'       => $driverLocation['lng'] ?? null,

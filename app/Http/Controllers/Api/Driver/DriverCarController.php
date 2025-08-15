@@ -69,25 +69,25 @@ class DriverCarController extends Controller
         ]);
     }
 
-     public function updateDetails(Request $request)
-    {
-        $driver = Auth::guard('driver-api')->user(); // Logged-in driver
-
-        $validated = $request->validate([
-            'email'             => 'nullable|email',
-            'address'           => 'nullable|string|max:255',
-            'city'              => 'nullable|string|max:100',
-            'state'             => 'nullable|string|max:100',
-            'pin'               => 'nullable|string|max:10',
-            'dl_number'         => 'nullable|string|max:50',
-            'dl_validity_date'  => 'nullable|date',
-        ]);
-
-        $driver->update($validated);
-
-        return response()->json([
-            'message' => 'Driver details updated successfully',
-            'driver'  => $driver
-        ]);
-    }
+//     public function updateDetails(Request $request)
+//    {
+//        $driver = Auth::guard('driver-api')->user(); // Logged-in driver
+//
+//        $validated = $request->validate([
+//            'email'             => 'nullable|email',
+//            'address'           => 'nullable|string|max:255',
+//            'city'              => 'nullable|string|max:100',
+//            'state'             => 'nullable|string|max:100',
+//            'pin'               => 'nullable|string|max:10',
+//            'dl_number'         => 'nullable|string|max:50',
+//            'dl_validity_date'  => 'nullable|date',
+//        ]);
+//
+//        $driver->update($validated);
+//
+//        return response()->json([
+//            'message' => 'Driver details updated successfully',
+//            'driver'  => $driver
+//        ]);
+//    }
 }

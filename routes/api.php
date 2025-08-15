@@ -69,7 +69,7 @@ Route::middleware(['auth:sanctum', 'only_driver'])->group(function () {
     Route::get('/driver/call-client/{ride_id}', [DriverRideController::class, 'callClient']);
     Route::get('/driver/car', [DriverCarController::class, 'getCarDetails']);
     Route::put('/driver/car', [DriverCarController::class, 'updateCarDetails']);
-    Route::put('/driver/update-details', [DriverCarController::class, 'updateDetails']);
+ //   Route::put('/driver/update-details', [DriverCarController::class, 'updateDetails']);
     // next day have to test these api
     Route::get('/driver/wallet', [DriverWalletController::class, 'balance']);
     Route::post('/driver/wallet/add', [DriverWalletController::class, 'addMoney']);
