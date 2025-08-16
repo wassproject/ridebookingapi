@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class UserRideController extends Controller
 {
@@ -297,9 +298,42 @@ class UserRideController extends Controller
 //
 //        return round($earthRadius * $c, 2); // km
 //    }
+// UserRideController.php
+    public function cancelRide($id)
+    {
+        $ride = Ride::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if (!$ride) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Ride not found'
+            ], 404);
+        }
+
+        if (!in_array($ride->status, ['upcoming', 'accepted'])) {
+            return response()->json([
+                'status' => false,
+                'message' => 'This ride cannot be canceled'
+            ], 400);
+        }
+
+        $ride->status = 'cancelled';
+        $ride->save();
+
+        // Optional: Refund logic, notify driver, etc.
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Ride canceled successfully',
+            'ride_status' => $ride->status
+        ]);
+    }
+
     public function show($id)
     {
-        $ride = Ride::with('carType', 'city') // load relations if needed
+        $ride = Ride::with('carType', 'city','driver') // load relations if needed
         ->find($id);
 
         if (!$ride) {
@@ -312,6 +346,7 @@ class UserRideController extends Controller
         return response()->json([
             'status' => true,
             'ride'   => [
+                'ride-id'                => $ride->id,
                 'pickup_location'    => $ride->pickup_location,
                 'drop_location'      => $ride->drop_location,
                 'ride_time'          => $ride->ride_time,
@@ -327,6 +362,9 @@ class UserRideController extends Controller
                 'transmission'       => $ride->transmission,
                 'trip_type'          => $ride->trip_type,
                 'driver_phone'       => $ride->driver?->phone,
+                'driver_photo'       => $ride->driver?->selfie_photo
+                    ? asset('storage/' . $ride->driver->selfie_photo)
+                    : null,
             ]
         ]);
     }
@@ -473,6 +511,128 @@ class UserRideController extends Controller
 
         return round($earthRadius * $c, 2); // km
     }
+
+
+// UserRideController.php
+    public function listRides(Request $request)
+    {
+        $userId = auth()->id();
+        $status = $request->query('status'); // optional filter: upcoming, past, cancelled
+
+        $query = Ride::where('user_id', $userId)
+            ->with(['driver', 'city']); // eager load useful info
+
+        if ($status === 'upcoming') {
+            $query->whereIn('status', ['upcoming', 'accepted']);
+        } elseif ($status === 'past') {
+            $query->where('status', 'completed');
+        } elseif ($status === 'cancelled') {
+            $query->where('status', 'cancelled');
+        }
+
+        $rides = $query->orderBy('trip_starting_date', 'desc')->get();
+
+        return response()->json([
+            'status' => true,
+            'rides'  => $rides
+        ]);
+    }
+
+
+    // UserRideController.php
+
+    public function upcomingRides()
+    {
+        $userId = auth('user-api')->id();
+
+        $rides = Ride::where('user_id', $userId)
+            ->where('status', 'upcoming')
+           // ->orderBy('trip_starting_date', 'asc')
+            ->get();
+
+        return response()->json([
+            'debug_user_id' => $userId,
+            'rides' => $rides
+        ]);
+    }
+
+
+    public function confirmedRides()
+    {
+        $userId = auth('user-api')->id();
+
+        if (!$userId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Not authenticated as user',
+            ], 401);
+        }
+
+        $rides = Ride::with('driver') // eager load driver
+        ->where('user_id', $userId)
+            ->where('status', 'accepted') // or "confirmed"
+            ->orderBy('trip_starting_date', 'asc')
+            ->get()
+            ->map(function ($ride) {
+                return [
+                    'id'              => $ride->id,
+                    'pickup_location' => $ride->pickup_location,
+                    'drop_location'   => $ride->drop_location,
+                    'status'          => $ride->status,
+                    'fare'            => $ride->fare,
+                    'trip_starting_date' => $ride->trip_starting_date,
+                    'trip_ending_date'   => $ride->trip_ending_date,
+                    'driver_name'     => $ride->driver?->name,
+                    'driver_photo'    => $ride->driver?->selfie_photo
+                        ? asset('storage/' . $ride->driver->selfie_photo)
+                        : null,
+                ];
+            });
+
+        return response()->json([
+            'status' => true,
+            'rides'  => $rides,
+        ]);
+    }
+
+    public function cancelledRides()
+    {
+        $userId = auth('user-api')->id();
+
+        if (!$userId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Not authenticated as user',
+            ], 401);
+        }
+
+        $rides = Ride::with('driver')
+            ->where('user_id', $userId)
+            ->where('status', 'cancelled')
+            ->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(function ($ride) {
+                return [
+                    'id'              => $ride->id,
+                    'pickup_location' => $ride->pickup_location,
+                    'drop_location'   => $ride->drop_location,
+                    'status'          => $ride->status,
+                    'fare'            => $ride->fare,
+                    'trip_starting_date' => $ride->trip_starting_date,
+                    'trip_ending_date'   => $ride->trip_ending_date,
+                    'driver_name'     => $ride->driver?->name,
+                    'driver_photo'    => $ride->driver?->selfie_photo
+                        ? asset('storage/' . $ride->driver->selfie_photo)
+                        : null,
+                ];
+            });
+
+        return response()->json([
+            'status' => true,
+            'rides'  => $rides,
+        ]);
+    }
+
 
 
 

@@ -41,7 +41,18 @@ Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
     Route::put('/user/updatebanner/{id}', [UserDashboardController::class, 'updateBanner']);
 
     Route::post('/user/rides', [UserRideController::class, 'store']);
-    Route::get('user/rides/{id}', [UserRideController::class, 'show']);  // show ride
+    Route::get('user/rides/{id}/show', [UserRideController::class, 'show']);  // show ride
+    Route::post('user/rides/{id}/cancel', [UserRideController::class, 'cancelRide']); //cancel ride
+    // routes/api.php
+   //Route::get('user/rides/list', [UserRideController::class, 'listRides']);
+
+    Route::get('user/rides/upcoming', [UserRideController::class, 'upcomingRides']);
+    Route::get('user/rides/confirmed', [UserRideController::class, 'confirmedRides']);
+    Route::get('user/rides/cancelled', [UserRideController::class, 'cancelledRides']);
+
+
+
+
     //Route::get('/user/rides', [UserRideController::class, 'index']);           // Ride history
     //Route::get('/user/rides/{id}', [UserRideController::class, 'show']);
 
@@ -49,6 +60,11 @@ Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
 
 
 });
+
+
+
+
+
 
 // Authenticated routes driver
 Route::middleware(['auth:sanctum', 'only_driver'])->group(function () {
