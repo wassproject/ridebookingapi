@@ -50,6 +50,10 @@ return [
             'driver' => 'sanctum',
             'provider' => 'drivers',
         ],
+        'admin-api' => [
+            'driver' => 'sanctum',
+            'provider' => 'admins',
+        ],
     ],
     'providers' => [
         'users' => [
@@ -59,6 +63,10 @@ return [
         'drivers' => [
             'driver' => 'eloquent',
             'model' => App\Models\Driver::class,
+        ],
+        'admins' => [   // 👈 New Admin Provider
+            'driver' => 'eloquent',
+            'model' => App\Models\Admin::class,  // Create Admin model
         ],
 
     /*
@@ -113,6 +121,12 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'admins' => [  // 👈 Reset tokens for admins
+            'provider' => 'admins',
+            'table' => 'admin_password_resets',
             'expire' => 60,
             'throttle' => 60,
         ],

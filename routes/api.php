@@ -1,15 +1,25 @@
 <?php
 
+use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\Api\Admin\AboutUsAdminController;
+use App\Http\Controllers\Api\Admin\AdminCarTypeController;
+use App\Http\Controllers\Api\Admin\AdminTimeRangeController;
+
+use App\Http\Controllers\Api\Driver\DriverCarController;
 use App\Http\Controllers\Api\Driver\DriverImageUploadController;
 use App\Http\Controllers\Api\Driver\DriverPrivacyController;
 use App\Http\Controllers\Api\Driver\DriverRideController;
 use App\Http\Controllers\Api\Driver\DriverWalletController;
+use App\Http\Controllers\Api\NotificationController;
+
+use App\Http\Controllers\Api\User\AboutUsUserController;
+use App\Http\Controllers\Api\User\AppFeedbackController;
 use App\Http\Controllers\Api\User\CarTypeController;
+use App\Http\Controllers\Api\User\ContactController;
+use App\Http\Controllers\Api\User\FeedbackController;
+use App\Http\Controllers\Api\User\ProfileController;
 use App\Http\Controllers\Api\User\UserDashboardController;
 use App\Http\Controllers\Api\User\UserRideController;
-use App\Http\Controllers\Api\Driver\DriverCarController;
-use App\Http\Controllers\Admin\AdminCarTypeController;
-use App\Http\Controllers\Admin\AdminTimeRangeController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +32,11 @@ Route::post('/register/user', [AuthController::class, 'registerUser']);
 Route::post('/register/driver/request-otp', [AuthController::class, 'registerDriverRequestOtp']);
 Route::post('/register/driver/verify-otp', [AuthController::class, 'verifyDriverOtp']);
 Route::post('/register/driver', [AuthController::class, 'registerDriver']);
+
+//admin login
+Route::post('admin/login', [AdminAuthController::class, 'login']);
+
+
 
 // term and condition for driver
 Route::get('/driver/terms', [AuthController::class, 'getTerms']);
@@ -51,12 +66,30 @@ Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
     Route::get('user/rides/cancelled', [UserRideController::class, 'cancelledRides']);
 
 
+//user feedback
+    Route::post('user/rides/{rideId}/feedback', [FeedbackController::class, 'store']);
+//user profile get and update
+    Route::get('user/profile', [ProfileController::class, 'show']);
+    Route::post('user/profile/update', [ProfileController::class, 'update']);
 
+    //contact
+    Route::post('user/contact', [ContactController::class, 'store']);
+
+    //about us
+    Route::get('user/about-us', [AboutUsUserController::class, 'show']);
+
+    //appfeedback
+    Route::post('user/app-feedback', [AppFeedbackController::class, 'store']);
 
     //Route::get('/user/rides', [UserRideController::class, 'index']);           // Ride history
     //Route::get('/user/rides/{id}', [UserRideController::class, 'show']);
 
     Route::get('user/car-types', [CarTypeController::class, 'index']);
+
+    //notification
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+
 
 
 });
@@ -98,3 +131,10 @@ Route::middleware(['auth:sanctum', 'only_driver'])->group(function () {
 });
 
 
+//authenticated route admin
+Route::middleware('auth:admin-api')->group(function () {
+    Route::post('/admin/notifications/user', [NotificationController::class, 'sendToUser']);
+    Route::post('/admin/notifications/all', [NotificationController::class, 'sendToAll']);
+    Route::post('admin/about-us/update', [AboutUsAdminController::class, 'update']);
+
+});
