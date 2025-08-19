@@ -63,7 +63,7 @@ Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
 
     Route::post('/user/rides', [UserRideController::class, 'store']);
     Route::get('user/rides/{id}/show', [UserRideController::class, 'show']);  // show ride
-    Route::post('user/rides/{id}/cancel', [UserRideController::class, 'cancelRide']); //cancel ride
+    //Route::post('user/rides/{id}/cancel', [UserRideController::class, 'cancelRide']); //cancel ride
 
     // routes/api.php
    //Route::get('user/rides/list', [UserRideController::class, 'listRides']);
@@ -108,6 +108,13 @@ Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
     Route::post('user/logout', [AuthController::class, 'logout']);
 
 
+    //home
+    Route::get('/user/rides/fromcache/pending', [UserRideController::class, 'pendingRides']);
+// routes/api.php
+    Route::put('/user/rides/{id}/cancel', [UserRideController::class, 'cancelRideuser']);
+//get the ride id
+    Route::get('/user/rides/new/getrideid/user', [UserRideController::class, 'getrideid']);
+
 });
 
 
@@ -147,6 +154,7 @@ Route::middleware(['auth:sanctum', 'only_driver'])->group(function () {
     Route::post('/driver/wallet/add', [DriverWalletController::class, 'addMoney']);
 
     Route::get('/driver/rides/call/notify', [DriverRideInviteController::class, 'index']);
+
 });
 
 

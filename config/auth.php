@@ -42,6 +42,17 @@ return [
 //        ],
 //    ],
     'guards' => [
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        // Session guard for Admins (used by Filament panel)
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
+        //use by the sanctum
         'user-api' => [
             'driver' => 'sanctum',
             'provider' => 'users',
