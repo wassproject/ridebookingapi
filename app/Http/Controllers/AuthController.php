@@ -6,6 +6,7 @@ use App\Helpers\OtpHelper;
 use App\Models\Driver;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -40,33 +41,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'OTP sent successfully']);
     }
 
-    public function registerDriverRequestOtp(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'phone' => [
-                'required',
-                'regex:/^[0-9]{10}$/',
-                'unique:drivers,phone', // Check in drivers table
-                function ($attribute, $value, $message) {
-                    // Check in users table as well
-                    if (\App\Models\User::where('phone', $value)->exists()) {
-                        $message('The phone number has already been taken.');
-                    }
-                }
-            ],
-        ], [
-            'phone.regex' => 'The phone number must be exactly 10 digits.'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
-        // Generate OTP for driver
-        OtpHelper::generateOtp($request->phone, 'driver');
-
-        return response()->json(['message' => 'OTP sent successfully']);
-    }
     public function verifyUserOtp(Request $request)
     {
         $request->validate([
@@ -84,23 +58,7 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'OTP verified']);
     }
-    public function verifyDriverOtp(Request $request)
-    {
-        $request->validate([
-            'phone' => ['required', 'regex:/^[0-9]{10}$/'],
-            'code'  => 'required'
-        ], [
-            'phone.regex' => 'The phone number must be exactly 10 digits.'
-        ]);
 
-        if (!OtpHelper::verifyOtp($request->phone, $request->code, 'driver')) {
-            return response()->json(['message' => 'Invalid or expired OTP'], 401);
-        }
-
-        cache()->put('otp_verified_driver_'.$request->phone, true, 600);
-
-        return response()->json(['message' => 'OTP verified']);
-    }
     public function registerUser(Request $request)
     {
         $request->validate([
@@ -143,6 +101,53 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'User registered successfully', 'user' => $user, ]);
     }
+
+    public function registerDriverRequestOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => [
+                'required',
+                'regex:/^[0-9]{10}$/',
+                'unique:drivers,phone', // Check in drivers table
+                function ($attribute, $value, $message) {
+                    // Check in users table as well
+                    if (\App\Models\User::where('phone', $value)->exists()) {
+                        $message('The phone number has already been taken.');
+                    }
+                }
+            ],
+        ], [
+            'phone.regex' => 'The phone number must be exactly 10 digits.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        // Generate OTP for driver
+        OtpHelper::generateOtp($request->phone, 'driver');
+
+        return response()->json(['message' => 'OTP sent successfully']);
+    }
+
+    public function verifyDriverOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => ['required', 'regex:/^[0-9]{10}$/'],
+            'code'  => 'required'
+        ], [
+            'phone.regex' => 'The phone number must be exactly 10 digits.'
+        ]);
+
+        if (!OtpHelper::verifyOtp($request->phone, $request->code, 'driver')) {
+            return response()->json(['message' => 'Invalid or expired OTP'], 401);
+        }
+
+        cache()->put('otp_verified_driver_'.$request->phone, true, 600);
+
+        return response()->json(['message' => 'OTP verified']);
+    }
+
 
     public function registerDriver(Request $request)
     {
@@ -310,5 +315,24 @@ class AuthController extends Controller
             'status' => $type, // user or driver
             'user'   => $authUser
         ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $user = Auth::guard('user-api')->user();
+
+        if ($user) {
+           // $user->currentAccessToken()->delete();
+            $user->tokens()->delete();
+
+
+            return response()->json([
+                'message' => 'Logged out successfully'
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Logged out successfully'
+        ], 200);
     }
 }

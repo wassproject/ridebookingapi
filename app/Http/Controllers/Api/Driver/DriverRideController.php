@@ -412,47 +412,72 @@ public function callClient($rideId)
 //            'ride' => $ride,
 //        ]);
 //    }
-    public function acceptRide($id)
+    public function acceptRide($rideId)
     {
-        $driver = auth('driver-api')->user(); // Get full driver model
-        $driverId = $driver->id;
+        $driver = auth('driver-api')->user();
 
-        $ride = Ride::where('id', $id)
-            ->whereNull('driver_id') // Must not already have a driver
-            ->first();
+        // 1️⃣ Check if ride exists in DB
+        $ride = Ride::where('id', $rideId)->whereNull('driver_id')->first();
 
+        // 2️⃣ If not in DB, check cache (pending ride)
         if (!$ride) {
-              return response()->json([
-                'status' => false,
-                'message' => 'Ride not found or already assigned to another driver',
-            ], 404);
+            $rideData = Cache::get("pending_ride_{$rideId}");
+            if (!$rideData) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Ride not found or already accepted',
+                ], 404);
+            }
+
+            // Create ride in DB
+            $ride = Ride::create([
+                'user_id' => $rideData['user_id'],
+                'pickup_lat' => $rideData['pickup_lat'],
+                'pickup_lng' => $rideData['pickup_lng'],
+                'pickup_location' => $rideData['pickup_location'],
+                'drop_lat' => $rideData['drop_lat'],
+                'drop_lng' => $rideData['drop_lng'],
+                'drop_location' => $rideData['drop_location'],
+                'fare' => $rideData['fare'],
+                'city_id' => $rideData['city_id'],
+                'car_type' => $rideData['car_type'],
+                'trip_type' => $rideData['trip_type'],
+                'trip_starting_date' => $rideData['trip_starting_date'],
+                'trip_ending_date' => $rideData['trip_ending_date'],
+                'time' => $rideData['time'],
+                'hourly' => $rideData['hourly'],
+                'transmission' => $rideData['transmission'],
+                'status' => $rideData['status'],
+
+            ]);
+
+            // Remove ride from cache
+            Cache::forget("pending_ride_{$rideId}");
+            $pendingIds = Cache::get('pending_ride_ids', []);
+            Cache::put('pending_ride_ids', array_diff($pendingIds, [$rideId]));
         }
 
-        // Only allow accepting rides that are still upcoming
-        if ($ride->status !== 'upcoming') {
+        // 3️⃣ Only allow accepting rides that are upcoming
+        if ($ride->status !== 'pending') {
             return response()->json([
                 'status' => false,
-                'message' => 'Ride cannot be accepted because it is not upcoming',
+                'message' => 'Ride cannot be accepted because it is not pending',
             ], 400);
         }
 
-        // Get fare from ride table & calculate 20% commission
+        // 4️⃣ Wallet check & deduct
         $debitedAmount = round($ride->fare * 0.20, 2);
-
-        // Check if driver has enough wallet balance
         if ($driver->wallet_balance < $debitedAmount) {
             return response()->json([
                 'status' => false,
                 'message' => 'Insufficient wallet balance to accept this ride. Minimum required: ' . number_format($debitedAmount, 2),
             ], 400);
         }
-
-        // Deduct from wallet
         $driver->wallet_balance -= $debitedAmount;
         $driver->save();
 
-        // Assign driver to ride
-        $ride->driver_id = $driverId;
+        // 5️⃣ Assign driver
+        $ride->driver_id = $driver->id;
         $ride->status = 'accepted';
         $ride->save();
 
@@ -464,6 +489,8 @@ public function callClient($rideId)
             'ride' => $ride
         ]);
     }
+
+
 
 
     public function updateLocation(Request $request)

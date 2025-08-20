@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\CarType;
 use App\Models\Ride;
 use App\Models\City;
 use App\Models\Driver;
@@ -11,9 +12,29 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class UserRideController extends Controller
 {
+
+    public function getUserId(Request $request)
+    {
+        $user = auth('user-api')->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Authenticated user ID',
+            'user_id' => $user->id,
+        ]);
+    }
+
      public function index()
     {
         $userId = Auth::id();
@@ -30,275 +51,6 @@ class UserRideController extends Controller
     }
 
 
-//    public function store(Request $request)
-//    {
-//        $request->validate([
-//            'pickup_lat' => 'required|numeric',
-//            'pickup_lng' => 'required|numeric',
-//            'drop_lat'   => 'required|numeric',
-//            'drop_lng'   => 'required|numeric',
-//            'city_name'  => 'required|string',
-//        ]);
-//
-//        // 🔍 Find city
-//        $city = City::where('name', $request->city_name)->first();
-//        if (!$city) {
-//            return response()->json([
-//                'status' => false,
-//                'message' => 'City not found',
-//            ], 404);
-//        }
-//
-//        // 💰 Fare calculation
-//        $baseFare = 50;
-//        $variableFare = rand(50, 150);
-//        $calculatedFare = $baseFare + $variableFare;
-//
-//        // 📝 Create ride (no driver assigned yet)
-//        $ride = Ride::create([
-//            'driver_id'       => null, // no driver assigned yet
-//            'user_id'         => auth()->id(),
-//            'pickup_lat'      => $request->pickup_lat,
-//            'pickup_lng'      => $request->pickup_lng,
-//            'drop_lat'        => $request->drop_lat,
-//            'drop_lng'        => $request->drop_lng,
-//            'ride_time'       => now(),
-//            'status'          => 'upcoming', // waiting for a driver to accept
-//            'fare'            => $calculatedFare,
-//            'city_id'         => $city->id,
-//        ]);
-//
-//        // 🚖 Get all drivers in that city
-//        $driversInCity = Driver::where('city', $city->name)->get();
-//
-//        // 🔔 Send notification to all drivers in that city
-////        foreach ($driversInCity as $driver) {
-////            // Example: you can use Laravel events/notifications
-////           // $driver->notify(new \App\Notifications\NewRideRequest($ride));
-////        }
-//
-//        return response()->json([
-//            'status' => true,
-//            'message' => 'Ride created and all drivers in city notified',
-//            'calculated_fare' => $calculatedFare,
-//            'ride' => $ride,
-//            'notified_drivers_count' => $driversInCity->count(),
-//            'assigned_drivers' => $driversInCity,
-//        ]);
-//    }
-    /**
-     * Show a specific ride.
-     */
-//    public function show($id)
-//    {
-//        $userId = Auth::id();
-//
-//        $ride = Ride::with(['driver', 'city']) // 👈 Add relations
-//            ->where('id', $id)
-//            ->where('user_id', $userId)
-//            ->firstOrFail();
-//
-//        return response()->json([
-//            'status' => true,
-//            'ride' => $ride
-//        ]);
-//    }
-
-//    public function store(Request $request)
-//    {
-//        $request->validate([
-//            'pickup_lat' => 'required|numeric',
-//            'pickup_lng' => 'required|numeric',
-//            'drop_lat'   => 'required|numeric',
-//            'drop_lng'   => 'required|numeric',
-//            'city_name'  => 'required|string',
-//        ]);
-//
-//        // 🔍 Find city
-//        $city = City::where('name', $request->city_name)->first();
-//        if (!$city) {
-//            return response()->json([
-//                'status' => false,
-//                'message' => 'City not found',
-//            ], 404);
-//        }
-//
-//        // 🌍 Reverse Geocode pickup & drop using Nominatim
-//        $pickupAddress = $this->getAddressFromLatLng($request->pickup_lat, $request->pickup_lng);
-//        $dropAddress   = $this->getAddressFromLatLng($request->drop_lat, $request->drop_lng);
-//
-//        // 💰 Fare calculation
-//        $baseFare = 50;
-//        $variableFare = rand(50, 150);
-//        $calculatedFare = $baseFare + $variableFare;
-//
-//        // 📝 Create ride (no driver assigned yet)
-//        $ride = Ride::create([
-//            'driver_id'       => null,
-//            'user_id'         => auth()->id(),
-//            'pickup_lat'      => $request->pickup_lat,
-//            'pickup_lng'      => $request->pickup_lng,
-//            'pickup_location'  => $pickupAddress,  // new
-//            'drop_lat'        => $request->drop_lat,
-//            'drop_lng'        => $request->drop_lng,
-//            'drop_location'    => $dropAddress,    // new
-//            'ride_time'       => now(),
-//            'status'          => 'upcoming',
-//            'fare'            => $calculatedFare,
-//            'city_id'         => $city->id,
-//        ]);
-//
-//        // 🚖 Get all drivers in that city
-//        $driversInCity = Driver::where('city', $city->name)->get();
-//
-//        return response()->json([
-//            'status' => true,
-//            'message' => 'Ride created and all drivers in city notified',
-//            'calculated_fare' => $calculatedFare,
-//            'ride' => $ride,
-//            'notified_drivers_count' => $driversInCity->count(),
-//            'assigned_drivers' => $driversInCity,
-//        ]);
-//    }
-//
-//    /**
-//     * Get address from latitude & longitude using Nominatim API
-//     */
-//    private function getAddressFromLatLng($lat, $lng)
-//    {
-//        $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={$lat}&lon={$lng}&zoom=18&addressdetails=1";
-//
-//        $ch = curl_init();
-//        curl_setopt($ch, CURLOPT_URL, $url);
-//        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//        curl_setopt($ch, CURLOPT_USERAGENT, 'LaravelApp/1.0'); // Required by Nominatim
-//        $response = curl_exec($ch);
-//        curl_close($ch);
-//
-//        $data = json_decode($response, true);
-//
-//        return $data['display_name'] ?? 'Unknown location';
-//    }
-
-
-//    public function store(Request $request)
-//    {
-//        $request->validate([
-//            'pickup_lat' => 'required|numeric',
-//            'pickup_lng' => 'required|numeric',
-//            'drop_lat'   => 'required|numeric',
-//            'drop_lng'   => 'required|numeric',
-//            'city_name'  => 'required|string',
-//        ]);
-//
-//        // Find city
-//        $city = City::where('name', $request->city_name)->first();
-//        if (!$city) {
-//            return response()->json([
-//                'status' => false,
-//                'message' => 'City not found',
-//            ], 404);
-//        }
-//
-//        // Reverse Geocode pickup & drop using Nominatim
-//        $pickupAddress = $this->getAddressFromLatLng($request->pickup_lat, $request->pickup_lng);
-//        $dropAddress   = $this->getAddressFromLatLng($request->drop_lat, $request->drop_lng);
-//
-//        // Fare calculation
-//        $baseFare = 50;
-//        $variableFare = rand(50, 150);
-//        $calculatedFare = $baseFare + $variableFare;
-//
-//        // Create ride
-//        $ride = Ride::create([
-//            'driver_id'       => null,
-//            'user_id'         => auth()->id(),
-//            'pickup_lat'      => $request->pickup_lat,
-//            'pickup_lng'      => $request->pickup_lng,
-//            'pickup_location' => $pickupAddress,
-//            'drop_lat'        => $request->drop_lat,
-//            'drop_lng'        => $request->drop_lng,
-//            'drop_location'   => $dropAddress,
-//            'ride_time'       => now(),
-//            'status'          => 'upcoming',
-//            'fare'            => $calculatedFare,
-//            'city_id'         => $city->id,
-//        ]);
-//
-//        // Get all drivers in that city
-//        $driversInCity = Driver::where('city', $city->name)->get();
-//
-//        // Prepare driver list with distance
-//        $driversWithDistance = [];
-//        foreach ($driversInCity as $driver) {
-//            $driverLocation = Cache::get("driver_location_{$driver->id}");
-//
-//            if ($driverLocation) {
-//                $distance = $this->calculateDistance(
-//                    $driverLocation['lat'],
-//                    $driverLocation['lng'],
-//                    $request->pickup_lat,
-//                    $request->pickup_lng
-//                );
-//            } else {
-//                $distance = null;
-//            }
-//
-//            $driversWithDistance[] = [
-//                'driver_id' => $driver->id,
-//                'name' => $driver->name,
-//                'driver_lat' => $driverLocation['lat'] ?? null,
-//                'driver_lng' => $driverLocation['lng'] ?? null,
-//                'distance_km' => $distance,
-//                'pickup_location' => $pickupAddress,
-//                'drop_location' => $dropAddress,
-//            ];
-//        }
-//
-//        return response()->json([
-//            'status' => true,
-//            'message' => 'Ride created, drivers with distance returned',
-//            'calculated_fare' => $calculatedFare,
-//            'ride' => $ride,
-//            'drivers' => $driversWithDistance
-//        ]);
-//    }
-//
-//    /**
-//     * Reverse Geocode with Nominatim
-//     */
-//    private function getAddressFromLatLng($lat, $lng)
-//    {
-//        $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={$lat}&lon={$lng}&zoom=18&addressdetails=1";
-//
-//        $ch = curl_init();
-//        curl_setopt($ch, CURLOPT_URL, $url);
-//        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//        curl_setopt($ch, CURLOPT_USERAGENT, 'LaravelApp/1.0');
-//        $response = curl_exec($ch);
-//        curl_close($ch);
-//
-//        $data = json_decode($response, true);
-//        return $data['display_name'] ?? 'Unknown location';
-//    }
-//
-//    /**
-//     * Calculate distance between 2 lat/lng points (Haversine formula)
-//     */
-//    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
-//    {
-//        $earthRadius = 6371; // km
-//        $dLat = deg2rad($lat2 - $lat1);
-//        $dLon = deg2rad($lon2 - $lon1);
-//
-//        $a = sin($dLat/2) * sin($dLat/2) +
-//            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-//            sin($dLon/2) * sin($dLon/2);
-//        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-//
-//        return round($earthRadius * $c, 2); // km
-//    }
-// UserRideController.php
     public function cancelRide($id)
     {
         $ride = Ride::where('id', $id)
@@ -369,6 +121,114 @@ class UserRideController extends Controller
         ]);
     }
 
+//    public function store(Request $request)
+//    {
+//        $request->validate([
+//            'pickup_lat' => 'required|numeric',
+//            'pickup_lng' => 'required|numeric',
+//            'drop_lat'   => 'required|numeric',
+//            'drop_lng'   => 'required|numeric',
+//            'city_name'  => 'required|string',
+//            'car_type_id' => 'required|exists:car_types,id',
+//            'trip_type'    => 'required|in:round_way,one_way',
+//            'trip_starting_date' => 'nullable|date',
+//            'trip_ending_date'   => 'nullable|date',
+//            'time'               => 'nullable',
+//            'hourly'             => 'nullable|string',
+//            'transmission' => 'required|in:manual,automatic',
+//        ]);
+//
+//        // Find city
+//        $city = City::where('name', $request->city_name)->first();
+//        if (!$city) {
+//            return response()->json([
+//                'status' => false,
+//                'message' => 'City not found',
+//            ], 404);
+//        }
+//
+//        // Reverse Geocode pickup & drop using Nominatim
+//        $pickupAddress = $this->getAddressFromLatLng($request->pickup_lat, $request->pickup_lng);
+//        $dropAddress   = $this->getAddressFromLatLng($request->drop_lat, $request->drop_lng);
+//
+//        // Fare calculation
+//        $baseFare = 50;
+//        $variableFare = rand(50, 150);
+//        $calculatedFare = $baseFare + $variableFare;
+//
+//        // Create ride
+//        $ride = Ride::create([
+//            'driver_id'       => null,
+//            'user_id'         => auth()->id(),
+//            'pickup_lat'      => $request->pickup_lat,
+//            'pickup_lng'      => $request->pickup_lng,
+//            'pickup_location' => $pickupAddress,
+//            'drop_lat'        => $request->drop_lat,
+//            'drop_lng'        => $request->drop_lng,
+//            'drop_location'   => $dropAddress,
+//            'ride_time'       => now(),
+//            'status'          => 'upcoming',
+//            'fare'            => $calculatedFare,
+//            'city_id'         => $city->id,
+//            'car_type_id'     => $request->car_type_id,
+//            'trip_starting_date' => $request->trip_starting_date,
+//            'trip_ending_date'   => $request->trip_ending_date,
+//            'time'               => $request->time,
+//            'hourly'             => $request->hourly,
+//            'transmission'    => $request->transmission, // Store transmission
+//            'trip_type'       => $request->trip_type, // Store trip type
+//        ]);
+//
+//        // Get all drivers in that city with their car & car type
+//        $driversInCity = Driver::with(['car.carType'])
+//            ->where('city', $city->name)
+//            ->get();
+//
+//        // Prepare driver list with distance + car name
+//        $driversWithDistance = [];
+//        foreach ($driversInCity as $driver) {
+//            $driverLocation = Cache::get("driver_location_{$driver->id}");
+//
+//            if ($driverLocation) {
+//                $distance = $this->calculateDistance(
+//                    $driverLocation['lat'],
+//                    $driverLocation['lng'],
+//                    $request->pickup_lat,
+//                    $request->pickup_lng
+//                );
+//            } else {
+//                $distance = null;
+//            }
+//
+//            $driversWithDistance[] = [
+//                'driver_id'        => $driver->id,
+//                'name'             => $driver->name,
+//                'photo_url'        => $driver->selfie_photo ? asset('storage/' . $driver->selfie_photo) : null,
+//                'car_name'         => $driver->car->carType->name ?? 'Unknown',
+//                'driver_lat'       => $driverLocation['lat'] ?? null,
+//                'driver_lng'       => $driverLocation['lng'] ?? null,
+//                'distance_km'      => $distance,
+//                'pickup_location'  => $pickupAddress,
+//                'drop_location'    => $dropAddress,
+//            ];
+//        }
+//
+//        return response()->json([
+//            'status' => true,
+//            'message' => 'Ride created, drivers with distance returned',
+//            'calculated_fare' => $calculatedFare,
+//           // 'ride' => $ride,
+//            'ride' => $ride->load('carType'),
+//            'transmission'    => $ride->transmission,
+//            'trip_type'       => $ride->trip_type,
+//            'trip_starting_date' => $request->trip_starting_date,
+//            'trip_ending_date'   => $request->trip_ending_date,
+//            'time'               => $request->time,
+//            'hourly'             => $request->hourly,
+//            'drivers' => $driversWithDistance
+//        ]);
+//    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -395,7 +255,10 @@ class UserRideController extends Controller
             ], 404);
         }
 
-        // Reverse Geocode pickup & drop using Nominatim
+        // Find car type
+        $carType = CarType::find($request->car_type_id);
+
+        // Reverse Geocode
         $pickupAddress = $this->getAddressFromLatLng($request->pickup_lat, $request->pickup_lng);
         $dropAddress   = $this->getAddressFromLatLng($request->drop_lat, $request->drop_lng);
 
@@ -404,8 +267,11 @@ class UserRideController extends Controller
         $variableFare = rand(50, 150);
         $calculatedFare = $baseFare + $variableFare;
 
-        // Create ride
-        $ride = Ride::create([
+        // Temporary ride ID
+        $tempRideId = Str::uuid()->toString();
+
+        // Ride data to store in cache
+        $rideData = [
             'driver_id'       => null,
             'user_id'         => auth()->id(),
             'pickup_lat'      => $request->pickup_lat,
@@ -415,38 +281,49 @@ class UserRideController extends Controller
             'drop_lng'        => $request->drop_lng,
             'drop_location'   => $dropAddress,
             'ride_time'       => now(),
-            'status'          => 'upcoming',
+            'status'          => 'pending',
             'fare'            => $calculatedFare,
             'city_id'         => $city->id,
-            'car_type_id'     => $request->car_type_id,
+            'city_name'       => $city->name,
+            'car_type'        => $carType->name, // ✅ store car type name instead of ID
             'trip_starting_date' => $request->trip_starting_date,
             'trip_ending_date'   => $request->trip_ending_date,
             'time'               => $request->time,
             'hourly'             => $request->hourly,
-            'transmission'    => $request->transmission, // Store transmission
-            'trip_type'       => $request->trip_type, // Store trip type
-        ]);
+            'transmission'       => $request->transmission,
+            'trip_type'          => $request->trip_type,
+        ];
 
-        // Get all drivers in that city with their car & car type
+        // Save ride in cache
+        Cache::put("pending_ride_{$tempRideId}", $rideData, now()->addMinutes(10));
+
+        // Maintain a global list of pending ride IDs
+        $rideIds = Cache::get('pending_ride_ids', []);
+        $rideIds[] = $tempRideId;
+        Cache::put('pending_ride_ids', $rideIds, now()->addMinutes(10));
+
+        // Confirm ride is cached
+        if (Cache::has("pending_ride_{$tempRideId}")) {
+            \Log::info("✅ Ride cached successfully", [
+                'ride_id' => $tempRideId
+            ]);
+        } else {
+            \Log::error("❌ Ride failed to cache", [
+                'ride_id' => $tempRideId
+            ]);
+        }
+
+        // Get drivers in city
         $driversInCity = Driver::with(['car.carType'])
             ->where('city', $city->name)
             ->get();
 
-        // Prepare driver list with distance + car name
         $driversWithDistance = [];
         foreach ($driversInCity as $driver) {
             $driverLocation = Cache::get("driver_location_{$driver->id}");
-
-            if ($driverLocation) {
-                $distance = $this->calculateDistance(
-                    $driverLocation['lat'],
-                    $driverLocation['lng'],
-                    $request->pickup_lat,
-                    $request->pickup_lng
-                );
-            } else {
-                $distance = null;
-            }
+            $distance = $driverLocation
+                ? $this->calculateDistance($driverLocation['lat'], $driverLocation['lng'], $request->pickup_lat, $request->pickup_lng)
+                : null;
 
             $driversWithDistance[] = [
                 'driver_id'        => $driver->id,
@@ -455,27 +332,30 @@ class UserRideController extends Controller
                 'car_name'         => $driver->car->carType->name ?? 'Unknown',
                 'driver_lat'       => $driverLocation['lat'] ?? null,
                 'driver_lng'       => $driverLocation['lng'] ?? null,
-                'distance_km'      => $distance,
+                'distance_km'      => $distance, // ✅ distance added
                 'pickup_location'  => $pickupAddress,
                 'drop_location'    => $dropAddress,
             ];
         }
 
+        // Log simulated notifications for testing
+        \Log::info('Simulated notification to drivers', [
+            'ride_id' => $tempRideId,
+            'drivers' => collect($driversWithDistance)->pluck('driver_id')
+        ]);
+
+        // Return JSON response
         return response()->json([
             'status' => true,
-            'message' => 'Ride created, drivers with distance returned',
+            'message' => 'Ride created, notify these drivers (testing mode)',
+            'ride_id' => $tempRideId,
             'calculated_fare' => $calculatedFare,
-           // 'ride' => $ride,
-            'ride' => $ride->load('carType'),
-            'transmission'    => $ride->transmission,
-            'trip_type'       => $ride->trip_type,
-            'trip_starting_date' => $request->trip_starting_date,
-            'trip_ending_date'   => $request->trip_ending_date,
-            'time'               => $request->time,
-            'hourly'             => $request->hourly,
-            'drivers' => $driversWithDistance
+            'trip_type' => $request->trip_type,
+            'drivers_to_notify' => $driversWithDistance
         ]);
     }
+
+
 
     /**
      * Reverse Geocode with Nominatim
