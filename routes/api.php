@@ -46,14 +46,8 @@ Route::post('/login/verify-otp', [AuthController::class, 'verifyOtp']);
 //admin login
 Route::post('admin/login', [AdminAuthController::class, 'login']);
 
-
-
 // term and condition for driver
 Route::get('/driver/terms', [AuthController::class, 'getTerms']);
-
-
-//admin for saving the car details and time
-
 
 // Authenticated routes user
 Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
@@ -61,52 +55,33 @@ Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
     Route::post('/user/postbanners', [UserDashboardController::class, 'storeBanner']);
     Route::put('/user/updatebanner/{id}', [UserDashboardController::class, 'updateBanner']);
 
-    Route::post('/user/rides', [UserRideController::class, 'store']);
-    Route::get('user/rides/{id}/show', [UserRideController::class, 'show']);  // show ride
-    //Route::post('user/rides/{id}/cancel', [UserRideController::class, 'cancelRide']); //cancel ride
-
-    // routes/api.php
-   //Route::get('user/rides/list', [UserRideController::class, 'listRides']);
-//authenticated user id
-    Route::get('/user/id', [UserRideController::class, 'getUserId']);
-//user ride
+    Route::post('/user/rides', [UserRideController::class, 'store']);//book a ride
+    Route::get('user/car-types', [CarTypeController::class, 'index']);//gate the car name and id
+    Route::get('/user/id', [UserRideController::class, 'getUserId']);//get the user id
+    //user ride
     Route::get('user/rides/upcoming', [UserRideController::class, 'upcomingRides']);
     Route::get('user/rides/confirmed', [UserRideController::class, 'confirmedRides']);
     Route::get('user/rides/cancelled', [UserRideController::class, 'cancelledRides']);
-
     //user feedback
-    Route::post('user/rides/{rideId}/feedback', [FeedbackController::class, 'store']);
+    Route::post('user/rides/{rideId}/feedback', [FeedbackController::class, 'store']);//feedback to the driver
    //user profile get and update
-    Route::get('user/profile', [ProfileController::class, 'show']);
-    Route::post('user/profile/update', [ProfileController::class, 'update']);
+    Route::get('user/profile', [ProfileController::class, 'show']);//see the user profile
+    Route::post('user/profile/update', [ProfileController::class, 'update']);//edit profile
+    Route::post('user/contact', [ContactController::class, 'store']);//profile contactus
+    Route::get('user/about-us', [AboutUsUserController::class, 'show']);//about us
+    Route::post('user/app-feedback', [AppFeedbackController::class, 'store']);//rate us
+    Route::delete('user/account/delete', [AccountController::class, 'destroy']);//delete account
+    Route::post('user/logout', [AuthController::class, 'logout']);//logout
 
-    //contact
-    Route::post('user/contact', [ContactController::class, 'store']);
-
-    //about us
-    Route::get('user/about-us', [AboutUsUserController::class, 'show']);
-
-    //appfeedback
-    Route::post('user/app-feedback', [AppFeedbackController::class, 'store']);
-
-    //Route::get('/user/rides', [UserRideController::class, 'index']);           // Ride history
-    //Route::get('/user/rides/{id}', [UserRideController::class, 'show']);
-
-    Route::get('user/car-types', [CarTypeController::class, 'index']);
+    Route::get('/user/rides/{id}', [UserRideController::class, 'show']);
 
     //notification
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-
     //delete profile
-
-    Route::delete('user/account/delete', [AccountController::class, 'destroy']);
 
     //get t&c and privacy policy
     Route::get('user/terms', [UserPrivacyController::class, 'index']);
-
-    Route::post('user/logout', [AuthController::class, 'logout']);
-
 
     //home
     Route::get('/user/rides/fromcache/pending', [UserRideController::class, 'pendingRides']);
@@ -115,6 +90,14 @@ Route::middleware(['auth:sanctum', 'only_user'])->group(function () {
 //get the ride id
     Route::get('/user/rides/new/getrideid/user', [UserRideController::class, 'getrideid']);
 
+
+    // Route::get('user/rides/{id}/show', [UserRideController::class, 'show']);  // show ride
+    //Route::post('user/rides/{id}/cancel', [UserRideController::class, 'cancelRide']); //cancel ride
+
+    // routes/api.php
+    //Route::get('user/rides/list', [UserRideController::class, 'listRides']);
+//authenticated user id
+    //Route::get('/user/rides', [UserRideController::class, 'index']); //ride hitory
 });
 
 
@@ -130,9 +113,7 @@ Route::middleware(['auth:sanctum', 'only_driver'])->group(function () {
     Route::post('/driver/upload/aadhaar', [DriverImageUploadController::class, 'uploadAadhaarPhotos']);
     Route::post('/driver/upload/pan-card-photo', [DriverImageUploadController::class, 'uploadPanCardPhoto']);
     Route::post('/driver/upload/selfie-photo', [DriverImageUploadController::class, 'uploadSelfiePhoto']);
-   // Route::get('/driver/privacy-policy', [DriverPrivacyController::class, 'show']);
     Route::get('/driver/privacy-policy', [DriverPrivacyController::class, 'index']);
-
     Route::get('/driver/rides/upcoming', [DriverRideController::class, 'upcoming']);
     Route::get('/driver/rides/today', [DriverRideController::class, 'today']);
     Route::get('/driver/rides/past', [DriverRideController::class, 'past']);
@@ -148,13 +129,11 @@ Route::middleware(['auth:sanctum', 'only_driver'])->group(function () {
     Route::get('/driver/call-client/{ride_id}', [DriverRideController::class, 'callClient']);
     Route::get('/driver/car', [DriverCarController::class, 'getCarDetails']);
     Route::put('/driver/car', [DriverCarController::class, 'updateCarDetails']);
- //   Route::put('/driver/update-details', [DriverCarController::class, 'updateDetails']);
-    // next day have to test these api
     Route::get('/driver/wallet', [DriverWalletController::class, 'balance']);
     Route::post('/driver/wallet/add', [DriverWalletController::class, 'addMoney']);
-
     Route::get('/driver/rides/call/notify', [DriverRideInviteController::class, 'index']);
-
+// Route::put('/driver/update-details', [DriverCarController::class, 'updateDetails']);
+// Route::get('/driver/privacy-policy', [DriverPrivacyController::class, 'show']);
 });
 
 

@@ -85,8 +85,10 @@ class UserRideController extends Controller
 
     public function show($id)
     {
-        $ride = Ride::with('carType', 'city','driver') // load relations if needed
-        ->find($id);
+        $ride = Ride::with(['carType', 'city', 'driver'])
+            ->where('id', $id)
+            ->where('status', 'accepted') // ✅ only accepted rides
+            ->first();
 
         if (!$ride) {
             return response()->json([
@@ -295,7 +297,7 @@ class UserRideController extends Controller
         ];
 
         // Save ride in cache
-        Cache::put("pending_ride_{$tempRideId}", $rideData, now()->addMinutes(10));
+        Cache::put("pending_ride_{$tempRideId}", $rideData, now()->addMinutes(20));
 
         // Maintain a global list of pending ride IDs
         $rideIds = Cache::get('pending_ride_ids', []);
@@ -421,13 +423,29 @@ class UserRideController extends Controller
 
     // UserRideController.php
 
+//    public function upcomingRides()
+//    {
+//        $userId = auth('user-api')->id();
+//
+//        $rides = Ride::where('user_id', $userId)
+//            ->where('status', 'upcoming')
+//           // ->orderBy('trip_starting_date', 'asc')
+//            ->get();
+//
+//        return response()->json([
+//            'debug_user_id' => $userId,
+//            'rides' => $rides
+//        ]);
+//    }
+
     public function upcomingRides()
     {
         $userId = auth('user-api')->id();
 
         $rides = Ride::where('user_id', $userId)
-            ->where('status', 'upcoming')
-           // ->orderBy('trip_starting_date', 'asc')
+            ->whereIn('status', [ 'accepted'])
+            ->where('created_at', '>=', now()->subMinute(2)) // only rides created within last 1 min
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json([
@@ -435,8 +453,6 @@ class UserRideController extends Controller
             'rides' => $rides
         ]);
     }
-
-
     public function confirmedRides()
     {
         $userId = auth('user-api')->id();
@@ -475,43 +491,43 @@ class UserRideController extends Controller
         ]);
     }
 
-//    public function cancelledRides()
-//    {
-//        $userId = auth('user-api')->id();
-//
-//        if (!$userId) {
-//            return response()->json([
-//                'status'  => false,
-//                'message' => 'Not authenticated as user',
-//            ], 401);
-//        }
-//
-//        $rides = Ride::with('driver')
-//            ->where('user_id', $userId)
-//            ->where('status', 'cancelled')
-//            ->orderBy('updated_at', 'desc')
-//            ->get()
-//            ->map(function ($ride) {
-//                return [
-//                    'id'              => $ride->id,
-//                    'pickup_location' => $ride->pickup_location,
-//                    'drop_location'   => $ride->drop_location,
-//                    'status'          => $ride->status,
-//                    'fare'            => $ride->fare,
-//                    'trip_starting_date' => $ride->trip_starting_date,
-//                    'trip_ending_date'   => $ride->trip_ending_date,
-//                    'driver_name'     => $ride->driver?->name,
-//                    'driver_photo'    => $ride->driver?->selfie_photo
-//                        ? asset('storage/' . $ride->driver->selfie_photo)
-//                        : null,
-//                ];
-//            });
-//
-//        return response()->json([
-//            'status' => true,
-//            'rides'  => $rides,
-//        ]);
-//    }
+    public function cancelledRides()
+    {
+        $userId = auth('user-api')->id();
+
+        if (!$userId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Not authenticated as user',
+            ], 401);
+        }
+
+        $rides = Ride::with('driver')
+            ->where('user_id', $userId)
+            ->where('status', 'cancelled')
+            ->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(function ($ride) {
+                return [
+                    'id'              => $ride->id,
+                    'pickup_location' => $ride->pickup_location,
+                    'drop_location'   => $ride->drop_location,
+                    'status'          => $ride->status,
+                    'fare'            => $ride->fare,
+                    'trip_starting_date' => $ride->trip_starting_date,
+                    'trip_ending_date'   => $ride->trip_ending_date,
+                    'driver_name'     => $ride->driver?->name,
+                    'driver_photo'    => $ride->driver?->selfie_photo
+                        ? asset('storage/' . $ride->driver->selfie_photo)
+                        : null,
+                ];
+            });
+
+        return response()->json([
+            'status' => true,
+            'rides'  => $rides,
+        ]);
+    }
 
     public function cancelRideuser($rideId)
     {
@@ -522,7 +538,7 @@ class UserRideController extends Controller
             $ride = Ride::where('id', $rideId)
                 ->where('user_id', $user->id)
                 ->first();
-
+\Log::info($ride);
             if ($ride) {
                 if (in_array($ride->status, ['pending', 'accepted'])) {
                     $ride->status = 'cancelled';
@@ -620,6 +636,61 @@ class UserRideController extends Controller
     }
 
 
+//    public function getrideid(Request $request)
+//    {
+//
+//        $userId = auth('user-api')->id();
+//
+//        $rides = [];
+//
+//        // 1. Get rides from DB
+//        $dbRides = Ride::with(['city', 'driver'])
+//            ->where('user_id', $userId)
+//            ->orderBy('created_at', 'desc')
+//            ->get();
+//
+//        foreach ($dbRides as $ride) {
+//            $rides[] = [
+//                'ride_uuid' => $ride->ride_uuid,   // store uuid when accepted
+//                'db_id' => $ride->id,              // real DB ID
+//                'status' => $ride->status,
+//                'pickup_location' => $ride->pickup_location,
+//                'drop_location' => $ride->drop_location,
+//                'fare' => $ride->fare,
+//                'trip_starting_date' => $ride->trip_starting_date,
+//                'trip_ending_date' => $ride->trip_ending_date,
+//                'driver' => $ride->driver ? [
+//                    'id' => $ride->driver->id,
+//                    'name' => $ride->driver->name,
+//                    'phone' => $ride->driver->phone,
+//                ] : null
+//            ];
+//        }
+//
+//        // 2. Get rides from Cache (pending rides not yet in DB)
+//        $cacheKey = "user:{$userId}:rides";
+//        $cachedRides = Cache::get($cacheKey, []);
+//
+//        foreach ($cachedRides as $uuid => $ride) {
+//            $rides[] = [
+//                'ride_uuid' => $uuid,
+//                'db_id' => null,                  // not yet in DB
+//                'status' => 'pending',
+//                'pickup_location' => $ride['pickup_location'],
+//                'drop_location' => $ride['drop_location'],
+//                'fare' => $ride['fare'],
+//                'trip_starting_date' => $ride['trip_starting_date'],
+//                'trip_ending_date' => $ride['trip_ending_date'],
+//                'driver' => null
+//            ];
+//        }
+//
+//        return response()->json([
+//            'status' => true,
+//            'rides' => $rides
+//        ]);
+//
+//    }
     public function getrideid(Request $request)
     {
         $userId = auth('user-api')->id();
@@ -651,21 +722,24 @@ class UserRideController extends Controller
         }
 
         // 2. Get rides from Cache (pending rides not yet in DB)
-        $cacheKey = "user:{$userId}:rides";
-        $cachedRides = Cache::get($cacheKey, []);
+        $rideIds = Cache::get('pending_ride_ids', []);
 
-        foreach ($cachedRides as $uuid => $ride) {
-            $rides[] = [
-                'ride_uuid' => $uuid,
-                'db_id' => null,                  // not yet in DB
-                'status' => 'pending',
-                'pickup_location' => $ride['pickup_location'],
-                'drop_location' => $ride['drop_location'],
-                'fare' => $ride['fare'],
-                'trip_starting_date' => $ride['trip_starting_date'],
-                'trip_ending_date' => $ride['trip_ending_date'],
-                'driver' => null
-            ];
+        foreach ($rideIds as $uuid) {
+            $ride = Cache::get("pending_ride_{$uuid}");
+
+            if ($ride && $ride['user_id'] == $userId) {
+                $rides[] = [
+                    'ride_uuid' => $uuid,
+                    'db_id' => null,                  // not yet in DB
+                    'status' => 'pending',
+                    'pickup_location' => $ride['pickup_location'],
+                    'drop_location' => $ride['drop_location'],
+                    'fare' => $ride['fare'],
+                    'trip_starting_date' => $ride['trip_starting_date'],
+                    'trip_ending_date' => $ride['trip_ending_date'],
+                    'driver' => null
+                ];
+            }
         }
 
         return response()->json([
